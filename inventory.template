@@ -1,17 +1,14 @@
 [servers]
-%{ for ip in ec2_public_ip ~}
-${ip}
-%{ endfor ~}
+13.39.161.173
+15.237.28.60
+35.181.166.52
 
 [master]
-%{ for ip in xotocross_master_public_ip ~}
-${ip}
-%{ endfor ~}
+15.237.28.60
 
 [workernode]
-%{ for ip in xotocross_worker_public_ip ~}
-${ip}
-%{ endfor ~}
+13.39.161.173
+35.181.166.52
 
 [all:vars]
 ansible_connection=ssh
