@@ -83,17 +83,20 @@ jobs:
       - name: Upload .terraform.lock.hcl
         run: aws s3 cp .terraform.lock.hcl s3://${{ inputs.aws_bucket_instance_name }}
 
+      # - name: Add SSH key
+      #   env:
+      #     SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+      #   run: |
+      #     mkdir -p /home/runner/.ssh
+      #     echo " ${{ secrets.XOTOCROSS_GITHUB_SSH_KEY }}" > /home/runner/.ssh/id_rsa
+      #     chmod 600 /home/runner/.ssh/id_rsa
+      #     ssh-keyscan -t rsa github.com >> /home/runner/.ssh/known_hosts
+      #     ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+      #     ssh-add /home/runner/.ssh/id_rsa
+          
       - name: Add SSH key
         env:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-       # run: |
-       #   mkdir -p /home/runner/.ssh
-       #   echo " ${{ secrets.XOTOCROSS_GITHUB_SSH_KEY }}" > /home/runner/.ssh/id_rsa
-       #   chmod 600 /home/runner/.ssh/id_rsa
-       #   ssh-keyscan -t rsa github.com >> /home/runner/.ssh/known_hosts
-       #   ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-       #   ssh-add /home/runner/.ssh/id_rsa
-
         run: |
           mkdir -p /home/runner/.ssh
           echo "${{ secrets.XOTOCROSS_GITHUB_SSH_KEY }}" > /home/runner/.ssh/id_rsa
@@ -101,6 +104,14 @@ jobs:
           ssh-keyscan -t rsa github.com >> /home/runner/.ssh/known_hosts
           eval $(ssh-agent -s)
           ssh-add /home/runner/.ssh/id_rsa
+
+      #  run: |
+       #   mkdir -p /home/runner/.ssh
+        #  echo "${{ secrets.XOTOCROSS_GITHUB_SSH_KEY }}" > /home/runner/.ssh/id_rsa
+         # chmod 600 /home/runner/.ssh/id_rsa
+          #ssh-keyscan -t rsa github.com >> /home/runner/.ssh/known_hosts
+          #eval $(ssh-agent -s)
+          #ssh-add /home/runner/.ssh/id_rsa
 
           
       - name: Playbook
