@@ -1,13 +1,12 @@
-[servers]
-15.237.184.153
-35.180.10.142
-
 [master]
-51.44.21.52
+%{ for ip in xotocross_master_public_ip ~}
+${ip}
+%{ endfor ~}
 
 [workernode]
-15.237.184.153
-35.180.10.142
+%{ for ip in xotocross_worker_public_ip ~}
+${ip}
+%{ endfor ~}
 
 [all:vars]
 ansible_connection=ssh
