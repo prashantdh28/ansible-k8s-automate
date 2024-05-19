@@ -91,7 +91,6 @@ jobs:
           echo " ${{ secrets.XOTOCROSS_GITHUB_SSH_KEY }}" > /home/runner/.ssh/id_rsa
           chmod 600 /home/runner/.ssh/id_rsa
           ssh-keyscan -t rsa github.com >> /home/runner/.ssh/known_hosts
-          eval $(ssh-agent -s)
           ssh-agent -a $SSH_AUTH_SOCK > /dev/null
           ssh-add /home/runner/.ssh/id_rsa
 
