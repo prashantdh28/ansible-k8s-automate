@@ -48,7 +48,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          #aws-region: ${{ inputs.aws_region_input }}
+          aws-region: ${{ inputs.aws_region_input }}
 
       - name: Repository checkout
         uses: actions/checkout@v4
