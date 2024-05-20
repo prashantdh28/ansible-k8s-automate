@@ -76,6 +76,7 @@
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
         echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
+
     - name: Ensure no other apt-get or dpkg processes are running
       shell: |
         while sudo fuser /var/lib/dpkg/lock >/dev/null 2>&1; do
@@ -99,6 +100,19 @@
     - name: Reconfigure dpkg
       shell: sudo dpkg --configure -a
       become: yes
+      ignore_errors: yes
+
+    - name: Ensure no other apt-get or dpkg processes are running after reconfiguration
+      shell: |
+        while sudo fuser /var/lib/dpkg/lock >/dev/null 2>&1; do
+          echo "Waiting for other apt-get or dpkg process to finish..."
+          sleep 5
+        done
+        while sudo fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
+          echo "Waiting for other apt-get or dpkg process to finish..."
+          sleep 5
+        done
+      become: yes
 
     - name: Add Kubernetes gpg key and update apt sources
       shell: |
@@ -107,7 +121,6 @@
         echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
         sudo apt-get update
       become: yes
-
 
     # - name: Add Kubernetes gpg key
     #   shell: |
