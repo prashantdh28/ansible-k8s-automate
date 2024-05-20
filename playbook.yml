@@ -70,40 +70,32 @@
         state: directory
         mode: '0755'
 
-    - name: Add docker gpg key
+    - name: Add Docker GPG key
       shell: |
-        sudo rm -f /etc/apt/keyrings/docker.gpg
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
         echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-
-    - name: Add Kubernetes gpg key
-      become: yes
-      apt_key:
-        url: https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key
-        state: present
+    - name: Add Kubernetes GPG key
+      shell: |
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
     - name: Add Kubernetes repository
-      become: yes
-      apt_repository:
-        repo: deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/
-        state: present
+      shell: |
+        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
-    # - name: Add Kubernetes gpg key
-    #   shell: |
-    #     sudo rm -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-    #     curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-    #     echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
-    #     sudo apt-get update
+    - name: Update apt package index
+      ansible.builtin.apt:
+        update_cache: yes
 
     - name: Install kubeadm, kubectl, kubelet
       ansible.builtin.apt:
-        pkg:
+        name:
           - kubelet
           - kubeadm
           - kubectl
+        state: present
 
-    - name: Hold kubectl,kubeadm,kubelet versions
+    - name: Hold kubectl, kubeadm, kubelet versions
       ansible.builtin.shell: apt-mark hold kubelet kubectl kubeadm
 
     - name: Ensure kubeadm is in PATH
@@ -134,7 +126,7 @@
     - name: Set permission on kubeconfig file
       shell: sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-    - name: Install weavenet pod network add-on
+    - name: Install Weave Net pod network add-on
       ansible.builtin.shell: kubectl apply -f https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml
 
     - name: Generate token to join worker nodes to cluster
