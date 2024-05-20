@@ -2,6 +2,14 @@ name: create
 run-name: ${{ inputs.aws_bucket_instance_name }}
 
 on:
+
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
   workflow_dispatch:
     inputs:
       aws_region_input:
