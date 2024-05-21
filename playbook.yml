@@ -2,6 +2,9 @@
 - name: Install Kubeadm
   hosts: all
   become: yes
+  vars:
+    ubuntu_min_version: "18.04"  # Minimum supported Ubuntu version
+
   tasks:
     - name: Install Docker
       apt:
@@ -9,6 +12,7 @@
         state: present
       tags:
         - docker
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_version | version_compare(ubuntu_min_version, '>=')
 
     - name: Add Docker GPG key if not present
       apt_key:
@@ -16,7 +20,7 @@
         state: present
       tags:
         - docker
-      when: ansible_distribution == 'Ubuntu' and ansible_distribution_version | version_compare('18.04', '>=')
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_version | version_compare(ubuntu_min_version, '>=')
 
     - name: Add Docker repository
       apt_repository:
@@ -25,6 +29,7 @@
         update_cache: yes
       tags:
         - docker
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_version | version_compare(ubuntu_min_version, '>=')
 
     - name: Install necessary packages
       apt:
@@ -33,6 +38,7 @@
           - curl
           - software-properties-common
         state: present
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_version | version_compare(ubuntu_min_version, '>=')
 
     - name: Add Kubernetes GPG key if not present
       apt_key:
@@ -40,7 +46,7 @@
         state: present
       tags:
         - kubernetes
-      when: ansible_distribution == 'Ubuntu' and ansible_distribution_version | version_compare('18.04', '>=')
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_version | version_compare(ubuntu_min_version, '>=')
 
     - name: Add Kubernetes repository
       apt_repository:
@@ -49,6 +55,7 @@
         update_cache: yes
       tags:
         - kubernetes
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_version | version_compare(ubuntu_min_version, '>=')
 
     - name: Install Kubeadm, Kubelet, and Kubectl
       apt:
@@ -60,6 +67,7 @@
         update_cache: yes
       tags:
         - kubernetes
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_version | version_compare(ubuntu_min_version, '>=')
 
     - name: Hold the Kubernetes packages at the current version
       apt:
@@ -71,3 +79,4 @@
         - kubectl
       tags:
         - kubernetes
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_version | version_compare(ubuntu_min_version, '>=')
