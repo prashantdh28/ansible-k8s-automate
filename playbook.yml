@@ -112,7 +112,7 @@
         which kubeadm || { echo 'export PATH=$PATH:/usr/local/bin' >> ~/.bashrc && export PATH=$PATH:/usr/local/bin && . ~/.bashrc; }
 
     - name: Init kubeadm
-      ansible.builtin.shell: sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --control-plane-endpoint "{{ ansible_host }}:6443"
+      ansible.builtin.shell: sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --control-plane-endpoint "{{ ansible_host }}:6443" --ignore-preflight-errors=DirAvailable--var-lib-etcd
 
     - name: Create ~/.kube directory
       ansible.builtin.file:
