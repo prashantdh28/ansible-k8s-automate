@@ -10,12 +10,13 @@
       tags:
         - docker
 
-    - name: Add Docker GPG key
+    - name: Add Docker GPG key if not present
       apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
         state: present
       tags:
         - docker
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_version | version_compare('18.04', '>=')
 
     - name: Add Docker repository
       apt_repository:
@@ -33,12 +34,13 @@
           - software-properties-common
         state: present
 
-    - name: Add Kubernetes GPG key
+    - name: Add Kubernetes GPG key if not present
       apt_key:
         url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
         state: present
       tags:
         - kubernetes
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_version | version_compare('18.04', '>=')
 
     - name: Add Kubernetes repository
       apt_repository:
