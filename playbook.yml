@@ -78,59 +78,24 @@
         sleep 60 
 
 
-    # - name: Add Kubernetes gpg key
-    #   shell: |
-    #     sudo rm -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-    #     curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-    #     echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
-    #     sleep 60
+    - name: Add Kubernetes gpg key
+      shell: |
+        sudo rm -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+        sleep 60
         
  
-    - name: Add Kubernetes GPG key
-      shell: |
-        sudo rm -f /etc/apt/trusted.gpg.d/kubernetes.gpg
-        curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-        
-    - name: Add Kubernetes repository
-        apt_repository:
-          repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
-            state: present
-            update_cache: yes
+    - name: Install kubeadm, kubectl, kubelet
+      ansible.builtin.apt:
+        pkg:
+          - kubelet
+          - kubeadm
+          - kubectl
+          - containerd
 
-    - name: Update apt package cache
-        apt:
-          update_cache: yes
-
-    - name: Install Kubernetes tools
-        apt:
-          name: "{{ item }}"
-          state: present
-          loop:
-            - kubelet
-            - kubeadm
-            - kubectl
-
-    - name: Hold Kubernetes packages
-        apt:
-          name: "{{ item }}"
-          state: held
-          loop:
-            - kubelet
-            - kubectl
-            - kubeadm
-
-
-
-    # - name: Install kubeadm, kubectl, kubelet
-    #   ansible.builtin.apt:
-    #     pkg:
-    #       - kubelet
-    #       - kubeadm
-    #       - kubectl
-    #       - containerd
-
-    # - name: Hold kubectl,kubeadm,kubelet versions
-    #   ansible.builtin.shell: apt-mark hold kubelet kubectl kubeadm
+    - name: Hold kubectl,kubeadm,kubelet versions
+      ansible.builtin.shell: apt-mark hold kubelet kubectl kubeadm
 
     - name: Ensure kubeadm is in PATH
       ansible.builtin.shell: |
