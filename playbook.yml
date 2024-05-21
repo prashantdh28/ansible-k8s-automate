@@ -1,153 +1,71 @@
 ---
-- name: Initial setup and configuration
+- name: Install Kubeadm
   hosts: all
-  become: true
-  strategy: free
+  become: yes
   tasks:
-    - name: Wait 300 seconds for port 22
-      ansible.builtin.wait_for:
-        port: 22 
-        host: "{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}" 
-        search_regex: OpenSSH 
-        delay: 10 
-        timeout: 300
-
-    - name: Debug info
-      ansible.builtin.shell:
-        cmd: |
-          echo DEBUG_1:{{ ansible_host }}
-          echo DEBUG_2:${ansible_host}
-
-    - name: Disable swap on each node
-      ansible.builtin.shell: swapoff -a
-
-    - name: Configure prerequisites
-      ansible.builtin.shell:
-        cmd: |
-          cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
-          overlay
-          br_netfilter
-          EOF
-
-    - name: Load overlay module
-      community.general.modprobe:
-        name: overlay
+    - name: Install Docker
+      apt:
+        name: docker.io
         state: present
+      tags:
+        - docker
 
-    - name: Load br_netfilter module
-      community.general.modprobe:
-        name: br_netfilter
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
         state: present
+      tags:
+        - docker
 
-    - name: Sysctl params required by setup
-      ansible.builtin.shell:
-        cmd: |
-          cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
-          net.bridge.bridge-nf-call-iptables = 1
-          net.bridge.bridge-nf-call-ip6tables = 1
-          net.ipv4.ip_forward = 1
-          EOF
+    - name: Add Docker repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu focal stable
+        state: present
+        update_cache: yes
+      tags:
+        - docker
 
-    - name: Apply sysctl params without reboot
-      ansible.builtin.shell: sysctl --system
-
-    - name: Create containerd config file
-      ansible.builtin.shell: mkdir -p /etc/containerd && touch /etc/containerd/config.toml
-
-    - name: Install containerd prerequisites
+    - name: Install necessary packages
       apt:
         name:
           - apt-transport-https
-          - ca-certificates
-          - lsb-release
           - curl
-          - gnupg
+          - software-properties-common
         state: present
 
-    - name: Create keyrings directory
-      file: 
-        path: /etc/apt/keyrings
-        state: directory
-        mode: '0755'
+    - name: Add Kubernetes GPG key
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+      tags:
+        - kubernetes
 
-    - name: Add docker gpg key
-      shell: |
-        sudo rm -f /etc/apt/keyrings/docker.gpg
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-        sleep 60 
+    - name: Add Kubernetes repository
+      apt_repository:
+        repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+        state: present
+        update_cache: yes
+      tags:
+        - kubernetes
 
-
-    - name: Add Kubernetes gpg key
-      shell: |
-        sudo rm -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
-        sleep 60
-        
- 
-    - name: Install kubeadm, kubectl, kubelet
-      ansible.builtin.apt:
-        pkg:
+    - name: Install Kubeadm, Kubelet, and Kubectl
+      apt:
+        name:
           - kubelet
           - kubeadm
           - kubectl
-          - containerd
+        state: present
+        update_cache: yes
+      tags:
+        - kubernetes
 
-    - name: Hold kubectl,kubeadm,kubelet versions
-      ansible.builtin.shell: apt-mark hold kubelet kubectl kubeadm
-
-    - name: Ensure kubeadm is in PATH
-      ansible.builtin.shell: |
-        echo 'export PATH=$PATH:/usr/local/bin' >> ~/.bashrc
-        export PATH=$PATH:/usr/local/bin
-        . ~/.bashrc
-
-- name: Configure the master node
-  hosts: master
-  become: true
-  tasks:
-    - name: Ensure kubeadm is installed and in PATH
-      ansible.builtin.shell: |
-        which kubeadm || { echo 'export PATH=$PATH:/usr/local/bin' >> ~/.bashrc && export PATH=$PATH:/usr/local/bin && . ~/.bashrc; }
-
-    - name: Init kubeadm
-      ansible.builtin.shell: sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --control-plane-endpoint "{{ ansible_host }}:6443" --ignore-preflight-errors=DirAvailable--var-lib-etcd
-
-    - name: Create ~/.kube directory
-      ansible.builtin.file:
-        path: ~/.kube
-        state: directory
-
-    - name: Copy kubeconfig file
-      shell: sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-
-    - name: Set permission on kubeconfig file
-      shell: sudo chown $(id -u):$(id -g) $HOME/.kube/config
-
-    - name: Install weavenet pod network add-on
-      ansible.builtin.shell: kubectl apply -f https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml
-
-    - name: Generate token to join worker nodes to cluster
-      ansible.builtin.shell: sudo kubeadm token create --print-join-command
-      register: join_node_token
-      delegate_to: localhost
-
-    - name: Debug join node token
-      debug:
-        var: join_node_token
-
-- name: Join worker nodes to cluster
-  hosts: workernode
-  become: true
-  tasks:
-    - name: Debug master node token
-      debug:
-        var: hostvars['master']
-
-    - name: Save join token command as variable
-      ansible.builtin.set_fact:
-        join_node: "{{ hostvars['master'].join_node_token.stdout_lines[0] }}"
-
-    - name: Add worker nodes to cluster
-      shell: "sudo {{ join_node }}"
+    - name: Hold the Kubernetes packages at the current version
+      apt:
+        name: "{{ item }}"
+        state: held
+      loop:
+        - kubelet
+        - kubeadm
+        - kubectl
+      tags:
+        - kubernetes
