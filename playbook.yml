@@ -77,58 +77,21 @@
         echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
         sleep 60 
 
-    # - name: Ensure no other apt-get or dpkg processes are running
-    #   shell: |
-    #     while sudo fuser /var/lib/dpkg/lock >/dev/null 2>&1; do
-    #       echo "Waiting for other apt-get or dpkg process to finish..."
-    #       sleep 5
-    #     done
-    #     while sudo fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
-    #       echo "Waiting for other apt-get or dpkg process to finish..."
-    #       sleep 5
-    #     done
-    #   become: yes
 
-    # - name: Remove existing apt locks
-    #   shell: |
-    #     sudo rm -f /var/lib/apt/lists/lock
-    #     sudo rm -f /var/lib/dpkg/lock
-    #     sudo rm -f /var/lib/dpkg/lock-frontend
-    #     sudo rm -f /var/cache/apt/archives/lock
-    #   become: yes
-
-    # - name: Reconfigure dpkg
-    #   shell: sudo dpkg --configure -a
-    #   become: yes
-    #   ignore_errors: yes
-
-    # - name: Ensure no other apt-get or dpkg processes are running after reconfiguration
-    #   shell: |
-    #     while sudo fuser /var/lib/dpkg/lock >/dev/null 2>&1; do
-    #       echo "Waiting for other apt-get or dpkg process to finish..."
-    #       sleep 5
-    #     done
-    #     while sudo fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
-    #       echo "Waiting for other apt-get or dpkg process to finish..."
-    #       sleep 5
-    #     done
-    #   become: yes
-
-    # - name: Add Kubernetes gpg key and update apt sources
+    # - name: Add Kubernetes gpg key
     #   shell: |
     #     sudo rm -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg
     #     curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
     #     echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
-    #     sudo apt-get update
-    #   become: yes
-
+    #     sleep 60
+        
     - name: Add Kubernetes gpg key
       shell: |
         sudo rm -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
         sleep 60
-        
+
 
     - name: Install kubeadm, kubectl, kubelet
       ansible.builtin.apt:
